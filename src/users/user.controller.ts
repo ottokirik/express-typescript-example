@@ -6,6 +6,7 @@ import { BaseController } from '../common';
 import { HTTPError } from '../errors';
 import { ILogger } from '../logger';
 import { TYPES } from '../types';
+import { UserLoginDto, UserRegisterDto } from './dto';
 import { IUserController } from './user.controller.interface';
 
 @injectable()
@@ -18,11 +19,12 @@ export class UserController extends BaseController implements IUserController {
 		]);
 	}
 
-	signin(req: Request, res: Response, next: NextFunction): void {
+	signin(req: Request<{}, {}, UserLoginDto>, res: Response, next: NextFunction): void {
+		console.log(req.body);
 		this.ok<string>(res, 'signin');
 	}
 
-	signup(req: Request, res: Response, next: NextFunction): void {
+	signup(req: Request<{}, {}, UserRegisterDto>, res: Response, next: NextFunction): void {
 		// this.ok<string>(res, 'signup');
 		next(new HTTPError(401, 'тест'));
 	}
