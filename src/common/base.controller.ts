@@ -39,9 +39,13 @@ export abstract class BaseController {
 			this.logger.log(`[${route.method}] ${route.path}`);
 
 			// Сохранить контекст вызова
+			const middlewares = route.middlewares?.map((m) => m.execute.bind(m));
 			const handler = route.func.bind(this);
 
-			this.router[route.method](route.path, handler);
+			// Если есть middleares, пройтись по ним, затем по handler
+			const pipeline = middlewares ? [...middlewares, handler] : handler;
+
+			this.router[route.method](route.path, pipeline);
 		});
 	}
 }
