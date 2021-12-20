@@ -23,6 +23,7 @@ export class UserController extends BaseController implements IUserController {
 				path: '/signin',
 				method: 'post',
 				func: this.signin,
+				middlewares: [new ValidateMiddleware(UserLoginDto)],
 			},
 			{
 				path: '/signup',
@@ -33,8 +34,18 @@ export class UserController extends BaseController implements IUserController {
 		]);
 	}
 
-	signin(req: Request<{}, {}, UserLoginDto>, res: Response, next: NextFunction): void {
-		this.ok<string>(res, 'signin');
+	async signin(
+		{ body }: Request<{}, {}, UserLoginDto>,
+		res: Response,
+		next: NextFunction,
+	): Promise<void> {
+		const isCredentialsCorrect = await this.userService.validateUser(body);
+
+		if (!isCredentialsCorrect) {
+			return next(new HTTPError(404, 'Пользователь с такими данными не найден'));
+		}
+
+		this.ok(res, { message: 'Вы успешно вошли' });
 	}
 
 	async signup(
