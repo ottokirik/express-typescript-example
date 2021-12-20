@@ -48,6 +48,6 @@ export class UserController extends BaseController implements IUserController {
 			return next(new HTTPError(422, 'Такой пользователь уже зарегистрирован'));
 		}
 
-		this.ok<Record<string, string>>(res, { email: user.email });
+		this.ok(res, { email: user.email, id: user.id });
 	}
 }
