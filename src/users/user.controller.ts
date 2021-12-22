@@ -1,7 +1,8 @@
-import { Request, Response, NextFunction } from 'express';
+import 'reflect-metadata';
+
+import { NextFunction, Request, Response } from 'express';
 import { inject, injectable } from 'inversify';
 import { sign } from 'jsonwebtoken';
-import 'reflect-metadata';
 
 import { BaseController } from '../common';
 import { ValidateMiddleware } from '../common/validate.moddleware';
@@ -12,6 +13,7 @@ import { TYPES } from '../types';
 import { UserLoginDto, UserRegisterDto } from './dto';
 import { IUserController } from './user.controller.interface';
 import { IUserService } from './user.service.interface';
+import { AuthGuardMiddleware } from '../common/auth.guard.middleware';
 
 @injectable()
 export class UserController extends BaseController implements IUserController {
@@ -38,6 +40,7 @@ export class UserController extends BaseController implements IUserController {
 				path: '/info',
 				method: 'get',
 				func: this.info,
+				middlewares: [new AuthGuardMiddleware()],
 			},
 		]);
 	}
@@ -72,8 +75,10 @@ export class UserController extends BaseController implements IUserController {
 		this.ok(res, { email: user.email, id: user.id });
 	}
 
-	info({ user }: Request, res: Response, next: NextFunction) {
-		this.ok(res, { email: user });
+	async info({ user }: Request, res: Response, next: NextFunction): Promise<void> {
+		const userInfo = await this.userService.getUserInfo(user);
+
+		this.ok(res, { email: userInfo?.email, id: userInfo?.id });
 	}
 
 	private signJWT(email: string, secret: string): Promise<string> {
