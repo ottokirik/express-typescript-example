@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { inject, injectable } from 'inversify';
+import { sign } from 'jsonwebtoken';
 import 'reflect-metadata';
 
 import { BaseController } from '../common';
 import { ValidateMiddleware } from '../common/validate.moddleware';
+import { IConfigService } from '../config/config.service.interface';
 import { HTTPError } from '../errors';
 import { ILogger } from '../logger';
 import { TYPES } from '../types';
@@ -16,6 +18,7 @@ export class UserController extends BaseController implements IUserController {
 	constructor(
 		@inject(TYPES.ILogger) private loggerService: ILogger,
 		@inject(TYPES.UserService) private userService: IUserService,
+		@inject(TYPES.ConfigService) private configService: IConfigService,
 	) {
 		super(loggerService);
 		this.bindRoutes([
@@ -31,6 +34,11 @@ export class UserController extends BaseController implements IUserController {
 				func: this.signup,
 				middlewares: [new ValidateMiddleware(UserRegisterDto)],
 			},
+			{
+				path: '/info',
+				method: 'get',
+				func: this.info,
+			},
 		]);
 	}
 
@@ -42,10 +50,12 @@ export class UserController extends BaseController implements IUserController {
 		const isCredentialsCorrect = await this.userService.validateUser(body);
 
 		if (!isCredentialsCorrect) {
-			return next(new HTTPError(404, 'Пользователь с такими данными не найден'));
+			return next(new HTTPError(401, 'Ошибка авторизации'));
 		}
 
-		this.ok(res, { message: 'Вы успешно вошли' });
+		const jwt = await this.signJWT(body.email, this.configService.get('JWT_SECRET'));
+
+		this.ok(res, { jwt });
 	}
 
 	async signup(
@@ -60,5 +70,23 @@ export class UserController extends BaseController implements IUserController {
 		}
 
 		this.ok(res, { email: user.email, id: user.id });
+	}
+
+	info({ user }: Request, res: Response, next: NextFunction) {
+		this.ok(res, { email: user });
+	}
+
+	private signJWT(email: string, secret: string): Promise<string> {
+		return new Promise<string>((resolve, reject) => {
+			sign(
+				{ email, iat: Math.floor(Date.now() / 1000) },
+				secret,
+				{ algorithm: 'HS256' },
+				(err, token) => {
+					if (err) return reject(err);
+					return resolve(token as string);
+				},
+			);
+		});
 	}
 }
