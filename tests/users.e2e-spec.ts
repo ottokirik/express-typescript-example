@@ -19,6 +19,40 @@ describe('Users e2e', () => {
 
 		expect(res.statusCode).toEqual(422);
 	});
+
+	test('Login - success', async () => {
+		const res = await request(application.app)
+			.post('/users/signin')
+			.send({ email: 'test2@test.ru', password: 'testtest' });
+
+		expect(res.body.jwt).not.toBeUndefined();
+	});
+
+	test('Login - error', async () => {
+		const res = await request(application.app)
+			.post('/users/signin')
+			.send({ email: 'test2@test.ru', password: 'testtext' });
+
+		expect(res.statusCode).toBe(401);
+	});
+
+	test('Info - success', async () => {
+		const login = await request(application.app)
+			.post('/users/signin')
+			.send({ email: 'test2@test.ru', password: 'testtest' });
+
+		const res = await request(application.app)
+			.get('/users/info')
+			.set('Authorization', `Bearer ${login.body.jwt}`);
+
+		expect(res.body.email).toBe('test2@test.ru');
+	});
+
+	test('Info - error', async () => {
+		const res = await request(application.app).get('/users/info').set('Authorization', `Bearer 1`);
+
+		expect(res.statusCode).toBe(401);
+	});
 });
 
 afterAll(() => {
