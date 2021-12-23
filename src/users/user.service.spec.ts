@@ -38,7 +38,7 @@ beforeAll(() => {
 });
 
 describe('User Service', () => {
-	test('createUser', async () => {
+	test('create user', async () => {
 		configService.get = jest.fn().mockReturnValueOnce('1');
 		userRepository.create = jest.fn().mockImplementationOnce(
 			(user: User): UserModel => ({
@@ -57,5 +57,40 @@ describe('User Service', () => {
 
 		expect(createdUser?.id).toEqual(1);
 		expect(createdUser?.password).not.toEqual('12345678');
+	});
+
+	describe('Validate User', () => {
+		test('with no user found', async () => {
+			userRepository.find = jest.fn().mockReturnValueOnce(null);
+
+			const isValidUser = await userService.validateUser({
+				email: '',
+				password: '',
+			});
+
+			expect(isValidUser).toBeFalsy();
+		});
+
+		test('success', async () => {
+			userRepository.find = jest.fn().mockReturnValueOnce(createdUser);
+
+			const isValidUser = await userService.validateUser({
+				email: 'jest@jest.ru',
+				password: '12345678',
+			});
+
+			expect(isValidUser).toBeTruthy();
+		});
+
+		test('validate user incorrect password', async () => {
+			userRepository.find = jest.fn().mockReturnValueOnce(createdUser);
+
+			const isValidUser = await userService.validateUser({
+				email: 'jest@jest.ru',
+				password: '123456789',
+			});
+
+			expect(isValidUser).toBeFalsy();
+		});
 	});
 });
