@@ -52,4 +52,8 @@ export class App {
 		this.server = this.app.listen(this.port);
 		this.logger.log(`Сервер запущен на http://127.0.0.1:${this.port}`);
 	}
+
+	public close(): void {
+		this.server.close();
+	}
 }
